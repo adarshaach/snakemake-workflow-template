@@ -1,4 +1,8 @@
-# Main entrypoint of the workflow. 
-# Please follow the best practices: 
-# https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html,
-# in particular regarding the standardized folder structure mentioned there. 
+sample = "/array-1/data/raw/240502_SN417_0543_A_HT5THDMXY/raw/mpg_L30929-1_2224-ML-1-r1_S73_R1_001.fastq.gz"
+    rule fastqc: 
+        input: 
+            sample
+        output: 
+            "results/{basename(input)}_fastqc.html"
+        shell: 
+            "fastqc {input} -o results/"
