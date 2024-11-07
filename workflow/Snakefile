@@ -1,15 +1,17 @@
+rule all:
+    input:
+        "results/fastqc/mpg_L30929-1_2224-ML-1-r1_S73_R1_001/fastqc.html"  #refering output file
+
 rule fastqc:
     input:
-        "/array-1/data/raw/240502_SN417_0543_A_HT5THDMXY/raw/mpg_L30929-1_2224-ML-1-r1_S73_R1_001.fastq.gz,"
+        "/array-1/data/raw/240502_SN417_0543_A_HT5THDMXY/raw/mpg_L30929-1_2224-ML-1-r1_S73_R1_001.fastq.gz",
     output:
-        report=directory("/array-1/users/acharya/project/snakemake-workflow-template/workflow/results/fastqc_{status}/{sample}"),
-    conda:
-        "../envs/fastqc.yml"
+        report=directory("results/fastqc/{sample}/"),
     message:
         """--- Checking fastq files with FastQC."""
     log:
-        "results/fastqc_{status}/log/{sample}.log",
-    threads: int(workflow.cores * 0.2)  # assign 20% of max cores
+        "results/fastqc/{sample}/log/{sample}.log",
+    threads: int(workflow.cores * 0.2)
     shell:
         "mkdir -p {output.report};"
         "fastqc --nogroup --extract --quiet --threads {threads} -o {output.report} {input} > {log}"
