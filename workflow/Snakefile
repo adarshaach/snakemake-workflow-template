@@ -1,35 +1,41 @@
 import pandas as pd
 
-#Read sample sheet
+# Loading sample sheet and configuration
 samples = pd.read_csv("/array-1/users/acharya/data/sample_sheet.csv")
+input_dir = "/array-1/data/raw/240502_SN417_0543_A_HT5THDMXY/raw"
+fastqc_dir = "results/fastqc"
+clipped_dir = "results/clipped"
+adapter_seq = "TACACGACGCTCTTCCGATCT"
 
-#Helper function to get fastq path
-def get_fastq(wildcards):
-    return expand(
-        "{input_dir}/{sample}.fastq.gz",
-        input_dir="/array-1/data/raw/240502_SN417_0543_A_HT5THDMXY/raw",
-        sample=wildcards.sample,
-    )
-
-
-#Expand sample names for rule all
 sample_list = [file.split(".fastq.gz")[0] for file in samples['file']]
-#sample_inputs = expand("results/fastqc/{sample}/fastqc.html", sample=sample_list)
 
+# getting fastq file paths
+def get_fastq(wildcards):
+    return f"{input_dir}/{wildcards.sample}.fastq.gz"
+
+#define final output file for trimmed
+def get_final_outputs():
+    return expand(f"{clipped_dir}/{{sample}}_clipped.fastq.gz", sample=sample_list)
+
+#rule all for fastqc and cutadapt
 rule all:
     input:
-       expand("results/fastqc/{sample}/fastqc.html", sample=sample_list)
+        get_final_outputs()
 
 rule fastqc:
     input:
-        get_fastq,
+        get_fastq
     output:
-        report=directory("results/fastqc/{sample}/fastqc.html"),
-    message:
-        "--- Checking fastq file {wildcards.sample} with FastQC."
-    log:
-        "results/fastqc/log/{sample}.log",
+        report=directory(f"{fastqc_dir}/{{sample}}/fastqc.html")
     threads: int(workflow.cores * 0.2)
     shell:
-        "mkdir -p {output.report};"
-        "fastqc --nogroup --extract --quiet --threads {threads} -o {output.report} {input} > {log}"
+        "mkdir -p {output.report}; fastqc --nogroup --extract --quiet --threads {threads} -o {output.report} {input}"
+
+rule cutadapt:
+    input:
+        get_fastq
+    output:
+        clipped=f"{clipped_dir}/{{sample}}_clipped.fastq.gz"
+    threads: 1
+    shell:
+        "cutadapt -e 0.25 -a {adapter_seq} -o {output.clipped} {input}"
