@@ -1,16 +1,34 @@
+import pandas as pd
+
+#Read sample sheet
+samples = pd.read_csv("/array-1/users/acharya/data/sample_sheet.csv")
+
+#Helper function to get fastq path
+def get_fastq(wildcards):
+    return expand(
+        "{input_dir}/{sample}.fastq.gz",
+        input_dir="/array-1/data/raw/240502_SN417_0543_A_HT5THDMXY/raw",
+        sample=wildcards.sample,
+    )
+
+
+#Expand sample names for rule all
+sample_list = [file.split(".fastq.gz")[0] for file in samples['file']]
+#sample_inputs = expand("results/fastqc/{sample}/fastqc.html", sample=sample_list)
+
 rule all:
     input:
-        "results/fastqc/mpg_L30929-1_2224-ML-1-r1_S73_R1_001/fastqc.html"  #refering output file
+       expand("results/fastqc/{sample}/fastqc.html", sample=sample_list)
 
 rule fastqc:
     input:
-        "/array-1/data/raw/240502_SN417_0543_A_HT5THDMXY/raw/mpg_L30929-1_2224-ML-1-r1_S73_R1_001.fastq.gz",
+        get_fastq,
     output:
-        report=directory("results/fastqc/{sample}/"),
+        report=directory("results/fastqc/{sample}/fastqc.html"),
     message:
-        """--- Checking fastq files with FastQC."""
+        "--- Checking fastq file {wildcards.sample} with FastQC."
     log:
-        "results/fastqc/{sample}/log/{sample}.log",
+        "results/fastqc/log/{sample}.log",
     threads: int(workflow.cores * 0.2)
     shell:
         "mkdir -p {output.report};"
